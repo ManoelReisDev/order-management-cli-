@@ -4,7 +4,7 @@ Projeto educacional em Java puro para construir, gradualmente, um sistema de ges
 
 ## Estado atual
 
-A SPEC-001 prepara somente a estrutura, as dependências e o build. Ainda não há aplicação executável, regras de negócio ou testes de negócio.
+As SPEC-001 e SPEC-002 estão concluídas. O projeto possui o bootstrap Maven e o modelo inicial de clientes, produtos e pedidos, com invariantes e testes unitários. Ainda não há aplicação executável, casos de uso, persistência ou interface de terminal.
 
 ## Stack e requisitos
 
