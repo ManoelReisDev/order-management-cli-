@@ -246,7 +246,7 @@ Criar um README curto explicando que:
 - cada SPEC representa uma unidade planejada de evolução;
 - specs devem ser implementadas em ordem quando houver dependências;
 - uma spec não autoriza implementar funcionalidades pertencentes às próximas;
-- `CLAUDE.md` contém as regras e contexto global;
+- `../AGENTS.md` contém as regras e contexto global;
 - a spec ativa define o escopo específico da implementação.
 
 Estabelecer a seguinte prioridade:
@@ -259,7 +259,7 @@ SPEC ativa
 Código existente
 ```
 
-O `CLAUDE.md` estabelece princípios globais.
+O `../AGENTS.md` estabelece princípios globais.
 
 A SPEC estabelece o objetivo específico da tarefa atual.
 
@@ -1093,7 +1093,7 @@ A SPEC-001 estará concluída quando:
 - [ ] `specs/` criado;
 - [ ] `specs/README.md` criado;
 - [ ] `specs/SPEC-001-project-bootstrap.md` criado;
-- [ ] `CLAUDE.md` criado;
+- [ ] `../AGENTS.md` criado;
 - [ ] Jackson configurado;
 - [ ] JUnit Jupiter configurado;
 - [ ] Mockito configurado;

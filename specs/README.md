@@ -33,7 +33,7 @@ SPEC ativa
 Código existente
 ```
 
-`CLAUDE.md` define os princípios globais. A spec ativa define o escopo da implementação atual.
+`../AGENTS.md` define os princípios globais. A spec ativa define o escopo da implementação atual.
 
 ## Índice
 

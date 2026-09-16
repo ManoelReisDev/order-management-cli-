@@ -621,7 +621,7 @@ As specifications representam incrementos planejados do sistema.
 
 Antes de implementar uma tarefa:
 
-1. Leia este `CLAUDE.md`.
+1. Leia este `AGENTS.md`.
 2. Identifique a SPEC solicitada.
 3. Leia a SPEC completa.
 4. Inspecione o código existente relacionado.
