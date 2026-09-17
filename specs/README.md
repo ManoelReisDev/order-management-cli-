@@ -41,3 +41,4 @@ Código existente
 | --- | --- | --- |
 | [SPEC-001](SPEC-001-project-bootstrap.md) | Bootstrap e arquitetura inicial | Concluída |
 | [SPEC-002](SPEC-002-domain-model.md) | Modelo de domínio inicial | Concluída |
+| [SPEC-003](SPEC-003-customer-application.md) | Casos de uso de Customer | Concluída |

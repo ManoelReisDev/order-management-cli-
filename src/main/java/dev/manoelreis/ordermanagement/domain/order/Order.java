@@ -52,10 +52,7 @@ public final class Order {
 
     public void addProduct(Product product, int quantity) {
         Product requiredProduct = requireValue(product, "Product is required");
-        items.compute(requiredProduct.getId(), (productId, existingItem) ->
-                existingItem == null
-                        ? OrderItem.from(requiredProduct, quantity)
-                        : existingItem.addQuantity(quantity));
+        items.compute(requiredProduct.getId(), (productId, existingItem) -> existingItem == null ? OrderItem.from(requiredProduct, quantity) : existingItem.addQuantity(quantity));
     }
 
     public void changeItemQuantity(ProductId productId, int quantity) {
@@ -69,9 +66,7 @@ public final class Order {
     }
 
     public BigDecimal getSubtotal() {
-        return items.values().stream()
-                .map(OrderItem::getSubtotal)
-                .reduce(ZERO_MONEY, BigDecimal::add);
+        return items.values().stream().map(OrderItem::getSubtotal).reduce(ZERO_MONEY, BigDecimal::add);
     }
 
     private OrderItem findItem(ProductId productId) {
