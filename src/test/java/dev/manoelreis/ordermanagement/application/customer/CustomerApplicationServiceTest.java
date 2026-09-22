@@ -48,7 +48,7 @@ class CustomerApplicationServiceTest {
     void shouldNotSaveWhenRegistrationDataIsInvalid() {
         assertThrows(InvalidCustomerException.class,
                 () -> service.registerCustomer(" ", "ada@example.com"));
-
+        // Verifique se nenhum cliente inválido foi salvo
         assertTrue(customerRepository.savedCustomers.isEmpty());
         assertEquals(0, customerRepository.findByIdCalls);
     }
