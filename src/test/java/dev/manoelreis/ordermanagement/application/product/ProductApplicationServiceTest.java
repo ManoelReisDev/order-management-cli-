@@ -64,7 +64,6 @@ class ProductApplicationServiceTest {
                 () -> service.registerProduct("Keyboard", null, new BigDecimal("100.00")));
         assertThrows(InvalidProductException.class,
                 () -> service.registerProduct("Keyboard", "Mechanical", BigDecimal.ZERO));
-
         assertTrue(productRepository.savedProducts.isEmpty());
         assertEquals(0, productRepository.findByIdCalls);
     }

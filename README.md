@@ -4,7 +4,7 @@ Projeto educacional em Java puro para construir, gradualmente, um sistema de ges
 
 ## Estado atual
 
-As SPEC-001, SPEC-002, SPEC-003, SPEC-004 e SPEC-005 estão concluídas. O projeto possui o bootstrap Maven, o modelo inicial de clientes, produtos e pedidos, os casos de uso de clientes e produtos e os casos de uso de criação, consulta, listagem e manutenção dos itens de pedidos em rascunho. Ainda não há aplicação executável, persistência concreta ou interface de terminal.
+As SPEC-001 a SPEC-006 estão concluídas. O projeto possui o bootstrap Maven, o modelo inicial de clientes, produtos e pedidos, os casos de uso de clientes e produtos, a manutenção de pedidos em rascunho e o processamento simulado de pagamentos aprovados ou recusados. Pedidos aprovados passam ao estado pago e deixam de aceitar alterações em seus itens. Ainda não há aplicação executável, persistência concreta ou interface de terminal.
 
 ## Stack e requisitos
 

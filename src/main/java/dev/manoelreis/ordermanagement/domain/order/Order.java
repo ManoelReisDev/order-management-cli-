@@ -3,6 +3,8 @@ package dev.manoelreis.ordermanagement.domain.order;
 import dev.manoelreis.ordermanagement.domain.customer.CustomerId;
 import dev.manoelreis.ordermanagement.domain.exception.DomainException;
 import dev.manoelreis.ordermanagement.domain.exception.OrderItemNotFoundException;
+import dev.manoelreis.ordermanagement.domain.payment.PaymentMethod;
+import dev.manoelreis.ordermanagement.domain.payment.PaymentResult;
 import dev.manoelreis.ordermanagement.domain.product.Product;
 import dev.manoelreis.ordermanagement.domain.product.ProductId;
 
@@ -20,7 +22,7 @@ public final class Order {
     private final OrderId id;
     private final CustomerId customerId;
     private final Instant createdAt;
-    private final OrderStatus status;
+    private OrderStatus status;
     private final Map<ProductId, OrderItem> items = new LinkedHashMap<>();
 
     public Order(OrderId id, CustomerId customerId, Instant createdAt) {
@@ -51,22 +53,42 @@ public final class Order {
     }
 
     public void addProduct(Product product, int quantity) {
+        ensureDraft();
         Product requiredProduct = requireValue(product, "Product is required");
         items.compute(requiredProduct.getId(), (productId, existingItem) -> existingItem == null ? OrderItem.from(requiredProduct, quantity) : existingItem.addQuantity(quantity));
     }
 
     public void changeItemQuantity(ProductId productId, int quantity) {
+        ensureDraft();
         OrderItem existingItem = findItem(productId);
         items.put(productId, existingItem.withQuantity(quantity));
     }
 
     public void removeItem(ProductId productId) {
+        ensureDraft();
         findItem(productId);
         items.remove(productId);
     }
 
     public BigDecimal getSubtotal() {
         return items.values().stream().map(OrderItem::getSubtotal).reduce(ZERO_MONEY, BigDecimal::add);
+    }
+
+    public PaymentResult pay(PaymentMethod method) {
+        PaymentMethod requiredMethod = requireValue(method, "Payment method is required");
+        ensureDraft();
+        if (items.isEmpty()) {
+            throw new DomainException("An empty order cannot be paid");
+        }
+
+        PaymentResult result = requiredMethod.process(getSubtotal());
+        if (result == null) {
+            throw new DomainException("Payment result is required");
+        }
+        if (result == PaymentResult.APPROVED) {
+            status = OrderStatus.PAID;
+        }
+        return result;
     }
 
     private OrderItem findItem(ProductId productId) {
@@ -79,6 +101,12 @@ public final class Order {
             throw new OrderItemNotFoundException("Order item was not found for product " + productId);
         }
         return item;
+    }
+
+    private void ensureDraft() {
+        if (status != OrderStatus.DRAFT) {
+            throw new DomainException("A paid order cannot be changed");
+        }
     }
 
     private static <T> T requireValue(T value, String message) {
