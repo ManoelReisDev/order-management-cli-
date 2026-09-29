@@ -43,3 +43,4 @@ Código existente
 | [SPEC-002](SPEC-002-domain-model.md) | Modelo de domínio inicial | Concluída |
 | [SPEC-003](SPEC-003-customer-application.md) | Casos de uso de Customer | Concluída |
 | [SPEC-004](SPEC-004-order-application.md) | Casos de uso de Order | Concluída |
+| [SPEC-005](SPEC-005-product-application.md) | Casos de uso de Product | Concluída |
