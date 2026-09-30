@@ -45,4 +45,4 @@ Código existente
 | [SPEC-004](SPEC-004-order-application.md) | Casos de uso de Order | Concluída |
 | [SPEC-005](SPEC-005-product-application.md) | Casos de uso de Product | Concluída |
 | [SPEC-006](SPEC-006-payment-application.md) | Processamento simulado de pagamentos | Concluída |
-| [SPEC-007](SPEC-007-report-application.md) | Relatório de vendas na camada Application | Planejada |
+| [SPEC-007](SPEC-007-report-application.md) | Relatório de vendas na camada Application | Concluída |
