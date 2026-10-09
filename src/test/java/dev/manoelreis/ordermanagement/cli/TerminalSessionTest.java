@@ -3,8 +3,10 @@ package dev.manoelreis.ordermanagement.cli;
 import dev.manoelreis.ordermanagement.cli.menu.TerminalSession;
 
 import dev.manoelreis.ordermanagement.application.customer.CustomerApplicationService;
+import dev.manoelreis.ordermanagement.application.order.OrderApplicationService;
 import dev.manoelreis.ordermanagement.application.product.ProductApplicationService;
 import dev.manoelreis.ordermanagement.infrastructure.persistence.memory.InMemoryCustomerRepository;
+import dev.manoelreis.ordermanagement.infrastructure.persistence.memory.InMemoryOrderRepository;
 import dev.manoelreis.ordermanagement.infrastructure.persistence.memory.InMemoryProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,9 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -29,12 +34,16 @@ class TerminalSessionTest {
 
     private CustomerApplicationService customers;
     private ProductApplicationService products;
+    private OrderApplicationService orders;
     private StringWriter output;
 
     @BeforeEach
     void setUp() {
-        customers = new CustomerApplicationService(new InMemoryCustomerRepository());
+        InMemoryCustomerRepository customerRepository = new InMemoryCustomerRepository();
+        customers = new CustomerApplicationService(customerRepository);
         products = new ProductApplicationService(new InMemoryProductRepository());
+        orders = new OrderApplicationService(new InMemoryOrderRepository(), customerRepository,
+                Clock.fixed(Instant.parse("2026-01-01T10:00:00Z"), ZoneOffset.UTC));
         output = new StringWriter();
     }
 
@@ -63,7 +72,7 @@ class TerminalSessionTest {
             }
         };
         output = trackedOutput;
-        TerminalSession session = new TerminalSession(customers, products, input, output);
+        TerminalSession session = new TerminalSession(customers, products, orders, input, output);
 
         session.run();
         String firstRun = output.toString();
@@ -73,7 +82,9 @@ class TerminalSessionTest {
         assertTrue(firstRun.contains("somente em memória"));
         for (String operation : new String[]{"[1] Cadastrar cliente", "[2] Cadastrar produto",
                 "[3] Listar clientes", "[4] Listar produtos", "[5] Buscar cliente por ID",
-                "[6] Buscar produto por ID", "[0] Sair"}) {
+                "[6] Buscar produto por ID", "[7] Criar pedido", "[8] Listar pedidos",
+                "[9] Buscar pedido por ID", "[10] Adicionar produto ao pedido",
+                "[11] Alterar quantidade de item", "[12] Remover item do pedido", "[0] Sair"}) {
             assertTrue(firstRun.contains(operation));
         }
         assertEquals(1, occurrences(firstRun, "Escolha uma opção"));
@@ -94,7 +105,7 @@ class TerminalSessionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "7", "-1", "abc", "1.0", "999999999999999999999999999"})
+    @ValueSource(strings = {"", "13", "-1", "abc", "1.0", "999999999999999999999999999"})
     void shouldRecoverFromInvalidOptionIncludingEmptyLine(String option) throws IOException {
         String result = run(option + "\n3\n0\n");
 
@@ -238,16 +249,22 @@ class TerminalSessionTest {
     @Test
     void shouldIsolateSeparatelyComposedSessions() throws IOException {
         run("1\nAna\nana@example.com\n2\nTeclado\n\n100\n0\n");
-        var newCustomers = new CustomerApplicationService(new InMemoryCustomerRepository());
         var newProducts = new ProductApplicationService(new InMemoryProductRepository());
         StringWriter newOutput = new StringWriter();
 
-        new TerminalSession(newCustomers, newProducts, new StringReader("3\n4\n0\n"), newOutput).run();
+        InMemoryCustomerRepository newCustomerRepository = new InMemoryCustomerRepository();
+        var newCustomers = new CustomerApplicationService(newCustomerRepository);
+        var newOrders = new OrderApplicationService(new InMemoryOrderRepository(), newCustomerRepository,
+                Clock.fixed(Instant.parse("2026-01-01T10:00:00Z"), ZoneOffset.UTC));
+
+        new TerminalSession(newCustomers, newProducts, newOrders,
+                new StringReader("3\n4\n8\n0\n"), newOutput).run();
 
         assertTrue(newCustomers.listCustomers().isEmpty());
         assertTrue(newProducts.listProducts().isEmpty());
         assertTrue(newOutput.toString().contains("Nenhum cliente cadastrado"));
         assertTrue(newOutput.toString().contains("Nenhum produto cadastrado"));
+        assertTrue(newOutput.toString().contains("Nenhum pedido cadastrado"));
         assertEquals(1, customers.listCustomers().size());
         assertEquals(1, products.listProducts().size());
     }
@@ -255,13 +272,15 @@ class TerminalSessionTest {
     @Test
     void shouldRejectNullDependencies() {
         assertThrows(IllegalArgumentException.class,
-                () -> new TerminalSession(null, products, new StringReader(""), output));
+                () -> new TerminalSession(null, products, orders, new StringReader(""), output));
         assertThrows(IllegalArgumentException.class,
-                () -> new TerminalSession(customers, null, new StringReader(""), output));
+                () -> new TerminalSession(customers, null, orders, new StringReader(""), output));
         assertThrows(IllegalArgumentException.class,
-                () -> new TerminalSession(customers, products, null, output));
+                () -> new TerminalSession(customers, products, null, new StringReader(""), output));
         assertThrows(IllegalArgumentException.class,
-                () -> new TerminalSession(customers, products, new StringReader(""), null));
+                () -> new TerminalSession(customers, products, orders, null, output));
+        assertThrows(IllegalArgumentException.class,
+                () -> new TerminalSession(customers, products, orders, new StringReader(""), null));
     }
 
     @Test
@@ -280,7 +299,7 @@ class TerminalSessionTest {
                 throw new AssertionError("Caller owns input");
             }
         };
-        TerminalSession session = new TerminalSession(customers, products, failingInput, output);
+        TerminalSession session = new TerminalSession(customers, products, orders, failingInput, output);
 
         IOException failure = assertThrows(IOException.class, session::run);
         session.run();
@@ -320,7 +339,7 @@ class TerminalSessionTest {
             }
         };
 
-        new TerminalSession(customers, products, input, bufferedOutput).run();
+        new TerminalSession(customers, products, orders, input, bufferedOutput).run();
 
         assertTrue(flushed.toString().contains("Sessão encerrada"));
     }
@@ -351,14 +370,14 @@ class TerminalSessionTest {
             public void close() {
             }
         };
-        TerminalSession session = new TerminalSession(customers, products, unreadInput, failingOutput);
+        TerminalSession session = new TerminalSession(customers, products, orders, unreadInput, failingOutput);
 
         assertEquals("Write failure", assertThrows(IOException.class, session::run).getMessage());
     }
 
     private String run(String input) throws IOException {
         output = new StringWriter();
-        new TerminalSession(customers, products, new StringReader(input), output).run();
+        new TerminalSession(customers, products, orders, new StringReader(input), output).run();
         return output.toString();
     }
 

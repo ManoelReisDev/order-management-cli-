@@ -2,6 +2,8 @@ package dev.manoelreis.ordermanagement.cli.menu;
 
 import dev.manoelreis.ordermanagement.application.customer.CustomerApplicationService;
 import dev.manoelreis.ordermanagement.application.customer.CustomerNotFoundException;
+import dev.manoelreis.ordermanagement.application.order.OrderApplicationService;
+import dev.manoelreis.ordermanagement.application.order.OrderNotFoundException;
 import dev.manoelreis.ordermanagement.application.product.ProductApplicationService;
 import dev.manoelreis.ordermanagement.application.product.ProductNotFoundException;
 import dev.manoelreis.ordermanagement.cli.input.TerminalInput;
@@ -10,6 +12,11 @@ import dev.manoelreis.ordermanagement.domain.customer.Customer;
 import dev.manoelreis.ordermanagement.domain.customer.CustomerId;
 import dev.manoelreis.ordermanagement.domain.exception.InvalidCustomerException;
 import dev.manoelreis.ordermanagement.domain.exception.InvalidProductException;
+import dev.manoelreis.ordermanagement.domain.exception.DomainException;
+import dev.manoelreis.ordermanagement.domain.exception.InvalidQuantityException;
+import dev.manoelreis.ordermanagement.domain.exception.OrderItemNotFoundException;
+import dev.manoelreis.ordermanagement.domain.order.Order;
+import dev.manoelreis.ordermanagement.domain.order.OrderId;
 import dev.manoelreis.ordermanagement.domain.product.Product;
 import dev.manoelreis.ordermanagement.domain.product.ProductId;
 
@@ -23,17 +30,20 @@ public final class TerminalSession {
 
     private final CustomerApplicationService customers;
     private final ProductApplicationService products;
+    private final OrderApplicationService orders;
     private final TerminalInput input;
     private final TerminalOutput output;
     private boolean finished;
 
     public TerminalSession(CustomerApplicationService customers, ProductApplicationService products,
+                           OrderApplicationService orders,
                            Reader input, Writer output) {
-        if (customers == null || products == null || input == null || output == null) {
+        if (customers == null || products == null || orders == null || input == null || output == null) {
             throw new IllegalArgumentException("Services, input and output are required");
         }
         this.customers = customers;
         this.products = products;
+        this.orders = orders;
         this.input = new TerminalInput(input);
         this.output = new TerminalOutput(output);
     }
@@ -59,7 +69,13 @@ public final class TerminalSession {
                     case "4" -> listProducts();
                     case "5" -> active = findCustomer();
                     case "6" -> active = findProduct();
-                    default -> output.write("Opção inválida. Escolha um código de 0 a 6.\n");
+                    case "7" -> active = createOrder();
+                    case "8" -> listOrders();
+                    case "9" -> active = findOrder();
+                    case "10" -> active = addProductToOrder();
+                    case "11" -> active = changeOrderItemQuantity();
+                    case "12" -> active = removeOrderItem();
+                    default -> output.write("Opção inválida. Escolha um código de 0 a 12.\n");
                 }
             }
             output.write("Sessão encerrada.\n");
@@ -148,6 +164,166 @@ public final class TerminalSession {
         return true;
     }
 
+    private boolean createOrder() throws IOException {
+        String text = read("ID do cliente (UUID completo): ");
+        if (text == null) {
+            return false;
+        }
+        UUID id = parseId(text);
+        if (id == null) {
+            return true;
+        }
+        try {
+            Order order = orders.createOrder(CustomerId.of(id));
+            output.write("Pedido criado com sucesso.\n");
+            output.showOrder(order);
+        } catch (CustomerNotFoundException exception) {
+            output.write("Cliente não encontrado: " + id + "\n");
+        }
+        return true;
+    }
+
+    private boolean findOrder() throws IOException {
+        String text = read("ID do pedido (UUID completo): ");
+        if (text == null) {
+            return false;
+        }
+        UUID id = parseId(text);
+        if (id == null) {
+            return true;
+        }
+        try {
+            output.showOrder(orders.findOrderById(OrderId.of(id)));
+        } catch (OrderNotFoundException exception) {
+            output.write("Pedido não encontrado: " + id + "\n");
+        }
+        return true;
+    }
+
+    private boolean addProductToOrder() throws IOException {
+        String orderText = read("ID do pedido (UUID completo): ");
+        if (orderText == null) {
+            return false;
+        }
+        UUID orderId = parseId(orderText);
+        if (orderId == null) {
+            return true;
+        }
+        String productText = read("ID do produto (UUID completo): ");
+        if (productText == null) {
+            return false;
+        }
+        UUID productId = parseId(productText);
+        if (productId == null) {
+            return true;
+        }
+        String quantityText = read("Quantidade: ");
+        if (quantityText == null) {
+            return false;
+        }
+        Integer quantity = parseQuantity(quantityText);
+        if (quantity == null) {
+            return true;
+        }
+        try {
+            Product product = products.findProductById(ProductId.of(productId));
+            Order order = orders.addProductToOrder(OrderId.of(orderId), product, quantity);
+            output.write("Produto adicionado ao pedido com sucesso.\n");
+            output.showOrder(order);
+        } catch (ProductNotFoundException exception) {
+            output.write("Produto não encontrado: " + productId + "\n");
+        } catch (OrderNotFoundException exception) {
+            output.write("Pedido não encontrado: " + orderId + "\n");
+        } catch (InvalidQuantityException exception) {
+            output.write("Quantidade inválida: " + quantity + ".\n");
+        } catch (DomainException exception) {
+            output.write("Operação rejeitada pelo estado do pedido.\n");
+        }
+        return true;
+    }
+
+    private boolean changeOrderItemQuantity() throws IOException {
+        String orderText = read("ID do pedido (UUID completo): ");
+        if (orderText == null) {
+            return false;
+        }
+        UUID orderId = parseId(orderText);
+        if (orderId == null) {
+            return true;
+        }
+        String productText = read("ID do produto do item (UUID completo): ");
+        if (productText == null) {
+            return false;
+        }
+        UUID productId = parseId(productText);
+        if (productId == null) {
+            return true;
+        }
+        String quantityText = read("Nova quantidade: ");
+        if (quantityText == null) {
+            return false;
+        }
+        Integer quantity = parseQuantity(quantityText);
+        if (quantity == null) {
+            return true;
+        }
+        try {
+            Order order = orders.changeOrderItemQuantity(
+                    OrderId.of(orderId), ProductId.of(productId), quantity);
+            output.write("Quantidade do item alterada com sucesso.\n");
+            output.showOrder(order);
+        } catch (OrderNotFoundException exception) {
+            output.write("Pedido não encontrado: " + orderId + "\n");
+        } catch (InvalidQuantityException exception) {
+            output.write("Quantidade inválida: " + quantity + ".\n");
+        } catch (OrderItemNotFoundException exception) {
+            output.write("O produto não identifica um item deste pedido: " + productId + "\n");
+        } catch (DomainException exception) {
+            output.write("Operação rejeitada pelo estado do pedido.\n");
+        }
+        return true;
+    }
+
+    private boolean removeOrderItem() throws IOException {
+        String orderText = read("ID do pedido (UUID completo): ");
+        if (orderText == null) {
+            return false;
+        }
+        UUID orderId = parseId(orderText);
+        if (orderId == null) {
+            return true;
+        }
+        String productText = read("ID do produto do item (UUID completo): ");
+        if (productText == null) {
+            return false;
+        }
+        UUID productId = parseId(productText);
+        if (productId == null) {
+            return true;
+        }
+        try {
+            Order order = orders.removeOrderItem(OrderId.of(orderId), ProductId.of(productId));
+            output.write("Item removido do pedido com sucesso.\n");
+            output.showOrder(order);
+        } catch (OrderNotFoundException exception) {
+            output.write("Pedido não encontrado: " + orderId + "\n");
+        } catch (OrderItemNotFoundException exception) {
+            output.write("O produto não identifica um item deste pedido: " + productId + "\n");
+        } catch (DomainException exception) {
+            output.write("Operação rejeitada pelo estado do pedido.\n");
+        }
+        return true;
+    }
+
+    private Integer parseQuantity(String text) throws IOException {
+        var quantity = TerminalInput.parseQuantity(text);
+        if (quantity.isEmpty()) {
+            output.write("Formato de quantidade inválido. Use um número inteiro.\n");
+            return null;
+        }
+        return quantity.get();
+    }
+
     private UUID parseId(String text) throws IOException {
         var parsedId = TerminalInput.parseId(text);
         if (parsedId.isEmpty()) {
@@ -174,6 +350,16 @@ public final class TerminalSession {
         }
         for (Product product : records) {
             output.showProduct(product);
+        }
+    }
+
+    private void listOrders() throws IOException {
+        var records = orders.listOrders();
+        if (records.isEmpty()) {
+            output.write("Nenhum pedido cadastrado.\n");
+        }
+        for (Order order : records) {
+            output.showOrder(order);
         }
     }
 

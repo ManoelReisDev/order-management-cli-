@@ -48,3 +48,4 @@ Código existente
 | [SPEC-007](SPEC-007-report-application.md) | Relatório de vendas na camada Application | Concluída |
 | [SPEC-008](SPEC-008-in-memory-repositories.md) | Repositories em memória | Concluída |
 | [SPEC-009](SPEC-009-cli-foundation.md) | CLI inicial de clientes e produtos | Concluída |
+| [SPEC-010](SPEC-010-order-cli.md) | Pedidos na CLI | Concluída |

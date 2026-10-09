@@ -13,6 +13,7 @@ public final class TerminalInput {
     private static final Pattern UUID_PATTERN = Pattern.compile(
             "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
     private static final Pattern PRICE_PATTERN = Pattern.compile("[+-]?[0-9]+(?:\\.[0-9]+)?");
+    private static final Pattern QUANTITY_PATTERN = Pattern.compile("[+-]?[0-9]+");
 
     private final BufferedReader reader;
 
@@ -42,6 +43,18 @@ public final class TerminalInput {
         }
         try {
             return Optional.of(new BigDecimal(normalized));
+        } catch (NumberFormatException exception) {
+            return Optional.empty();
+        }
+    }
+
+    public static Optional<Integer> parseQuantity(String text) {
+        String normalized = text.trim();
+        if (!QUANTITY_PATTERN.matcher(normalized).matches()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(Integer.parseInt(normalized));
         } catch (NumberFormatException exception) {
             return Optional.empty();
         }
