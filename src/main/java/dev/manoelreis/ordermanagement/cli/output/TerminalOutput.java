@@ -31,6 +31,7 @@ public final class TerminalOutput {
             ║  [10] Adicionar produto ao pedido║
             ║  [11] Alterar quantidade de item ║
             ║  [12] Remover item do pedido     ║
+            ║  [13] Processar pagamento        ║
             ║                                  ║
             ║  [0] Sair                        ║
             ╚══════════════════════════════════╝

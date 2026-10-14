@@ -4,6 +4,8 @@ import dev.manoelreis.ordermanagement.application.customer.CustomerApplicationSe
 import dev.manoelreis.ordermanagement.application.customer.CustomerNotFoundException;
 import dev.manoelreis.ordermanagement.application.order.OrderApplicationService;
 import dev.manoelreis.ordermanagement.application.order.OrderNotFoundException;
+import dev.manoelreis.ordermanagement.application.order.OrderRepository;
+import dev.manoelreis.ordermanagement.application.payment.PaymentApplicationService;
 import dev.manoelreis.ordermanagement.application.product.ProductApplicationService;
 import dev.manoelreis.ordermanagement.application.product.ProductNotFoundException;
 import dev.manoelreis.ordermanagement.cli.input.TerminalInput;
@@ -19,33 +21,51 @@ import dev.manoelreis.ordermanagement.domain.order.Order;
 import dev.manoelreis.ordermanagement.domain.order.OrderId;
 import dev.manoelreis.ordermanagement.domain.product.Product;
 import dev.manoelreis.ordermanagement.domain.product.ProductId;
+import dev.manoelreis.ordermanagement.domain.payment.PaymentMethod;
+import dev.manoelreis.ordermanagement.domain.payment.PaymentResult;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.Optional;
+import java.util.List;
 
 public final class TerminalSession {
 
     private final CustomerApplicationService customers;
     private final ProductApplicationService products;
     private final OrderApplicationService orders;
+    private final PaymentApplicationService payments;
     private final TerminalInput input;
     private final TerminalOutput output;
     private boolean finished;
 
     public TerminalSession(CustomerApplicationService customers, ProductApplicationService products,
                            OrderApplicationService orders,
+                           PaymentApplicationService payments,
                            Reader input, Writer output) {
-        if (customers == null || products == null || orders == null || input == null || output == null) {
+        if (customers == null || products == null || orders == null || payments == null
+                || input == null || output == null) {
             throw new IllegalArgumentException("Services, input and output are required");
         }
         this.customers = customers;
         this.products = products;
         this.orders = orders;
+        this.payments = payments;
         this.input = new TerminalInput(input);
         this.output = new TerminalOutput(output);
+    }
+
+    /** Retained for callers of the earlier CLI flows; payment operations require the new constructor. */
+    public TerminalSession(CustomerApplicationService customers, ProductApplicationService products,
+                           OrderApplicationService orders, Reader input, Writer output) {
+        this(customers, products, orders, new PaymentApplicationService(new OrderRepository() {
+            @Override public void save(Order order) { }
+            @Override public Optional<Order> findById(OrderId id) { return Optional.empty(); }
+            @Override public List<Order> findAll() { return List.of(); }
+        }), input, output);
     }
 
     public void run() throws IOException {
@@ -75,7 +95,8 @@ public final class TerminalSession {
                     case "10" -> active = addProductToOrder();
                     case "11" -> active = changeOrderItemQuantity();
                     case "12" -> active = removeOrderItem();
-                    default -> output.write("Opção inválida. Escolha um código de 0 a 12.\n");
+                    case "13" -> active = processPayment();
+                    default -> output.write("Opção inválida. Escolha um código de 0 a 13.\n");
                 }
             }
             output.write("Sessão encerrada.\n");
@@ -309,6 +330,43 @@ public final class TerminalSession {
             output.write("Pedido não encontrado: " + orderId + "\n");
         } catch (OrderItemNotFoundException exception) {
             output.write("O produto não identifica um item deste pedido: " + productId + "\n");
+        } catch (DomainException exception) {
+            output.write("Operação rejeitada pelo estado do pedido.\n");
+        }
+        return true;
+    }
+
+    private boolean processPayment() throws IOException {
+        String orderText = read("ID do pedido (UUID completo): ");
+        if (orderText == null) {
+            return false;
+        }
+        UUID orderId = parseId(orderText);
+        if (orderId == null) {
+            return true;
+        }
+        String resultText = read("Resultado simulado (1 - aprovar, 2 - recusar): ");
+        if (resultText == null) {
+            return false;
+        }
+        PaymentMethod method = switch (resultText.trim()) {
+            case "1" -> amount -> PaymentResult.APPROVED;
+            case "2" -> amount -> PaymentResult.DECLINED;
+            default -> null;
+        };
+        if (method == null) {
+            output.write("Escolha de resultado inválida. Use 1 para aprovar ou 2 para recusar.\n");
+            return true;
+        }
+        try {
+            PaymentResult result = payments.processPayment(OrderId.of(orderId), method);
+            if (result == PaymentResult.APPROVED) {
+                output.write("Pagamento aprovado.\n");
+            } else {
+                output.write("Pagamento recusado.\n");
+            }
+        } catch (OrderNotFoundException exception) {
+            output.write("Pedido não encontrado: " + orderId + "\n");
         } catch (DomainException exception) {
             output.write("Operação rejeitada pelo estado do pedido.\n");
         }

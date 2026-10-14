@@ -5,6 +5,7 @@ import dev.manoelreis.ordermanagement.cli.menu.TerminalSession;
 import dev.manoelreis.ordermanagement.application.customer.CustomerApplicationService;
 import dev.manoelreis.ordermanagement.application.order.OrderApplicationService;
 import dev.manoelreis.ordermanagement.application.product.ProductApplicationService;
+import dev.manoelreis.ordermanagement.application.payment.PaymentApplicationService;
 import dev.manoelreis.ordermanagement.infrastructure.persistence.memory.InMemoryCustomerRepository;
 import dev.manoelreis.ordermanagement.infrastructure.persistence.memory.InMemoryOrderRepository;
 import dev.manoelreis.ordermanagement.infrastructure.persistence.memory.InMemoryProductRepository;
@@ -28,7 +29,9 @@ public final class Main {
         ProductApplicationService products = new ProductApplicationService(productRepository);
         OrderApplicationService orders = new OrderApplicationService(
                 orderRepository, customerRepository, Clock.systemUTC());
+        PaymentApplicationService payments = new PaymentApplicationService(orderRepository);
         TerminalSession session = new TerminalSession(customers, products, orders,
+                payments,
                 new InputStreamReader(System.in, StandardCharsets.UTF_8),
                 new OutputStreamWriter(System.out, StandardCharsets.UTF_8));
         try {

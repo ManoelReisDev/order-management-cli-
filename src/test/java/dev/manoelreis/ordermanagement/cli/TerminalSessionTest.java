@@ -105,7 +105,7 @@ class TerminalSessionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "13", "-1", "abc", "1.0", "999999999999999999999999999"})
+    @ValueSource(strings = {"", "14", "-1", "abc", "1.0", "999999999999999999999999999"})
     void shouldRecoverFromInvalidOptionIncludingEmptyLine(String option) throws IOException {
         String result = run(option + "\n3\n0\n");
 

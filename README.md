@@ -38,7 +38,7 @@ O menu oferece cadastro de clientes (`1`) e produtos (`2`), listagem de clientes
 
 No cadastro de produto, a descrição pode ser vazia e o preço deve usar ponto decimal, como `100.00`, sem símbolo monetário ou notação científica. As operações de pedidos pedem os UUIDs completos exibidos pela própria CLI. Quantidades aceitam somente números inteiros; zero e valores negativos são rejeitados pelas regras do domínio. Cada consulta de pedido apresenta status, instante de criação, itens e subtotais com duas casas decimais. Erros de entrada ou dados inválidos são apresentados e devolvem a sessão ao menu.
 
-Os dados ficam somente em memória durante a sessão e são perdidos ao encerrar. Cada execução começa sem registros. A opção `0` ou o fim da entrada (EOF) encerra a aplicação; uma criação ou alteração interrompida por EOF não é aplicada. Pagamentos e relatórios ainda não estão disponíveis na CLI.
+Os dados ficam somente em memória durante a sessão e são perdidos ao encerrar. Cada execução começa sem registros. A opção `0` ou o fim da entrada (EOF) encerra a aplicação; uma criação ou alteração interrompida por EOF não é aplicada. A opção `13` processa um pagamento simulado: `1` aprova e `2` recusa, sem integração financeira real. Aprovações tornam o pedido `PAID`; recusas preservam o pedido em `DRAFT`.
 
 ## Organização
 
