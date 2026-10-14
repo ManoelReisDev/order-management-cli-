@@ -5,6 +5,7 @@ import dev.manoelreis.ordermanagement.domain.product.Product;
 import dev.manoelreis.ordermanagement.domain.product.ProductId;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public final class OrderItem {
 
@@ -22,6 +23,12 @@ public final class OrderItem {
 
     static OrderItem from(Product product, int quantity) {
         return new OrderItem(product.getId(), product.getName(), product.getPrice(), quantity);
+    }
+
+    public static OrderItem restore(ProductId productId, String productName,
+                                    BigDecimal unitPrice, int quantity) {
+        return new OrderItem(requireProductId(productId), normalizeName(productName),
+                normalizePrice(unitPrice), quantity);
     }
 
     OrderItem withQuantity(int quantity) {
@@ -62,5 +69,34 @@ public final class OrderItem {
             throw new InvalidQuantityException("Item quantity must be greater than zero");
         }
         return quantity;
+    }
+
+    private static ProductId requireProductId(ProductId productId) {
+        if (productId == null) {
+            throw new IllegalArgumentException("Product id is required");
+        }
+        return productId;
+    }
+
+    private static String normalizeName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Product name is required");
+        }
+        return name.trim();
+    }
+
+    private static BigDecimal normalizePrice(BigDecimal price) {
+        if (price == null) {
+            throw new IllegalArgumentException("Product price is required");
+        }
+        try {
+            BigDecimal normalized = price.setScale(2, RoundingMode.UNNECESSARY);
+            if (normalized.signum() <= 0) {
+                throw new IllegalArgumentException("Product price must be greater than zero");
+            }
+            return normalized;
+        } catch (ArithmeticException exception) {
+            throw new IllegalArgumentException("Product price must have at most two decimal places", exception);
+        }
     }
 }

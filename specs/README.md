@@ -50,4 +50,4 @@ Código existente
 | [SPEC-009](SPEC-009-cli-foundation.md) | CLI inicial de clientes e produtos | Concluída |
 | [SPEC-010](SPEC-010-order-cli.md) | Pedidos na CLI | Concluída |
 | [SPEC-011](SPEC-011-payment-cli.md) | Pagamentos na CLI | Concluída |
-| [SPEC-012](SPEC-012-json-persistence.md) | Persistência em JSON | Planejada |
+| [SPEC-012](SPEC-012-json-persistence.md) | Persistência em JSON | Concluída |

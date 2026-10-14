@@ -73,7 +73,7 @@ public final class TerminalSession {
             return;
         }
         try {
-            output.write("Os dados são mantidos somente em memória e serão perdidos ao encerrar.\n");
+            output.write("A sessão pode usar dados somente em memória ou persistidos automaticamente, conforme a composição.\n");
             boolean active = true;
             while (active) {
                 output.showMenu();

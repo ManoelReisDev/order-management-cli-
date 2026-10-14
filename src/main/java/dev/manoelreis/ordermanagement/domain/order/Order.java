@@ -14,6 +14,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class Order {
 
@@ -30,6 +32,26 @@ public final class Order {
         this.customerId = requireValue(customerId, "Order customer id is required");
         this.createdAt = requireValue(createdAt, "Order creation instant is required");
         this.status = OrderStatus.DRAFT;
+    }
+
+    public static Order restore(OrderId id, CustomerId customerId, Instant createdAt,
+                                OrderStatus status, List<OrderItem> restoredItems) {
+        Order order = new Order(id, customerId, createdAt);
+        if (status == null || restoredItems == null || restoredItems.stream().anyMatch(Objects::isNull)) {
+            throw new DomainException("Order restoration data is required");
+        }
+        Set<ProductId> productIds = new HashSet<>();
+        for (OrderItem item : restoredItems) {
+            if (!productIds.add(item.getProductId())) {
+                throw new DomainException("An order cannot contain duplicate products");
+            }
+            order.items.put(item.getProductId(), item);
+        }
+        if (status == OrderStatus.PAID && restoredItems.isEmpty()) {
+            throw new DomainException("A paid order cannot be empty");
+        }
+        order.status = status;
+        return order;
     }
 
     public OrderId getId() {
